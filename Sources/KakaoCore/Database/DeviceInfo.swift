@@ -160,7 +160,7 @@ public enum DeviceInfo {
     }
 
     /// Extract the active account SHA-512 hash from plist revision keys.
-    /// Keys like `DESIGNATEDFRIENDSREVISION:<sha512hex>` appear with non-zero values for the active account.
+    /// Keys like `*REVISION:<sha512hex>` appear with non-zero values for the active account.
     /// SHA-512("0") is the default/empty account hash.
     public static func activeAccountHash() -> String? {
         let plistPaths = [containerPreferencesPath, preferencesPath]
@@ -178,15 +178,23 @@ public enum DeviceInfo {
     private static func activeAccountHash(from plist: [String: Any]) -> String? {
         // SHA-512("0") = 31bca02... is the default/empty account
         let emptyHash = "31bca02094eb78126a517b206a88c73cfa9ec6f704c7030d18212cace820f025f00bf0ea68dbf3f3a5436ca63b53bf7bf80ad8d5de7d8359d0b7fed9dbc3ab99"
-        let prefix = "DESIGNATEDFRIENDSREVISION:"
-        for (key, val) in plist where key.hasPrefix(prefix) {
-            let hash = String(key.dropFirst(prefix.count))
-            if hash == emptyHash { continue }
+        // Match any key ending with "REVISION:<128-char hex>" (e.g. DESIGNATEDFRIENDSREVISION:,
+        // GETCONFREVISON:, DENYFILEEXTIONSIONREVISION:, GETCONFREVISONBYMORESETTINGS:)
+        let hexPattern = try! NSRegularExpression(pattern: "^[0-9a-f]{128}$")
+        var seen = Set<String>()
+        for (key, val) in plist {
+            guard let colonIdx = key.lastIndex(of: ":") else { continue }
+            let suffix = String(key[key.index(after: colonIdx)...])
+            guard suffix.count == 128,
+                  hexPattern.firstMatch(in: suffix, range: NSRange(suffix.startIndex..., in: suffix)) != nil,
+                  suffix != emptyHash,
+                  !seen.contains(suffix) else { continue }
+            seen.insert(suffix)
             let intVal: Int
             if let v = val as? Int { intVal = v }
             else if let v = val as? Double { intVal = Int(v) }
             else { intVal = 0 }
-            if intVal != 0 { return hash }
+            if intVal != 0 { return suffix }
         }
         return nil
     }
