@@ -88,17 +88,20 @@ public final class DatabaseReader: @unchecked Sendable {
         let sql = """
             SELECT r.chatId, r.type, r.chatName, r.activeMembersCount,
                    r.lastLogId, r.lastUpdatedAt, r.countOfNewMessage,
-                   u.displayName, u.friendNickName, u.nickName
+                   u.displayName, u.friendNickName, u.nickName,
+                   m.content
             FROM NTChatRoom r
             LEFT JOIN NTUser u ON r.directChatMemberUserId = u.userId AND u.linkId = 0
+            LEFT JOIN NTChatMeta m ON r.chatId = m.chatId AND m.type = 3
             ORDER BY r.lastUpdatedAt DESC
             LIMIT ?
             """
         return try query(sql, bind: [.int(limit)]) { row in
-            // For direct chats, use the friend's name; for groups, use chatName
+            // For direct chats, use the friend's name; for groups, use chatName or meta name
             let chatName = row.string(2)
+            let metaName = row.string(10)
             let displayName = row.string(7) ?? row.string(8) ?? row.string(9)
-            let name = chatName ?? displayName ?? "(unknown)"
+            let name = chatName ?? metaName ?? displayName ?? "(unknown)"
 
             return Chat(
                 id: row.int64(0),
