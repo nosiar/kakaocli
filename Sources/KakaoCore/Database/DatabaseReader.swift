@@ -85,23 +85,34 @@ public final class DatabaseReader: @unchecked Sendable {
 
     /// List all chat rooms.
     public func chats(limit: Int = 50) throws -> [Chat] {
+        let myId = try myUserId()
         let sql = """
             SELECT r.chatId, r.type, r.chatName, r.activeMembersCount,
                    r.lastLogId, r.lastUpdatedAt, r.countOfNewMessage,
                    u.displayName, u.friendNickName, u.nickName,
-                   m.content
+                   m.content,
+                   (SELECT GROUP_CONCAT(COALESCE(u2.displayName, u2.friendNickName, u2.nickName), ', ')
+                    FROM (SELECT DISTINCT msg.authorId
+                          FROM NTChatMessage msg
+                          WHERE msg.chatId = r.chatId AND msg.authorId != ? AND msg.authorId != 0
+                          LIMIT 5) ids
+                    LEFT JOIN NTUser u2 ON ids.authorId = u2.userId AND u2.linkId = 0
+                   ) AS memberNames
             FROM NTChatRoom r
             LEFT JOIN NTUser u ON r.directChatMemberUserId = u.userId AND u.linkId = 0
             LEFT JOIN NTChatMeta m ON r.chatId = m.chatId AND m.type = 3
             ORDER BY r.lastUpdatedAt DESC
             LIMIT ?
             """
-        return try query(sql, bind: [.int(limit)]) { row in
-            // For direct chats, use the friend's name; for groups, use chatName or meta name
+        return try query(sql, bind: [.int64(myId), .int(limit)]) { row in
+            // For direct chats, use the friend's name; for groups, use chatName, meta name, or member names
             let chatName = row.string(2)
             let metaName = row.string(10)
+            let memberNames = row.string(11)
             let displayName = row.string(7) ?? row.string(8) ?? row.string(9)
-            let name = chatName ?? metaName ?? displayName ?? "(unknown)"
+            let memberCount = row.int(3)
+            let isSelfChat = memberCount <= 1 && displayName == nil && chatName == nil && metaName == nil
+            let name = chatName ?? metaName ?? displayName ?? memberNames ?? (isSelfChat ? "나" : "(unknown)")
 
             return Chat(
                 id: row.int64(0),
@@ -207,14 +218,21 @@ public final class DatabaseReader: @unchecked Sendable {
     public func messagesSince(logId: Int64, myUserId: Int64) throws -> [SyncMessage] {
         let sql = """
             SELECT m.logId, m.chatId,
-                   COALESCE(r.chatName, u.displayName, u.friendNickName, u.nickName) as chatName,
+                   COALESCE(
+                       NULLIF(r.chatName, ''),
+                       meta.content,
+                       u.displayName, u.friendNickName, u.nickName
+                   ) as chatName,
                    m.authorId,
-                   COALESCE(u2.displayName, u2.friendNickName, u2.nickName) as senderName,
+                   COALESCE(u2.displayName, u2.friendNickName, u2.nickName,
+                           u3.displayName, u3.friendNickName, u3.nickName) as senderName,
                    m.message, m.type, m.sentAt
             FROM NTChatMessage m
             LEFT JOIN NTChatRoom r ON m.chatId = r.chatId
+            LEFT JOIN NTChatMeta meta ON r.chatId = meta.chatId AND meta.type = 3
             LEFT JOIN NTUser u ON r.directChatMemberUserId = u.userId AND u.linkId = 0
             LEFT JOIN NTUser u2 ON m.authorId = u2.userId AND u2.linkId = 0
+            LEFT JOIN NTUser u3 ON m.authorId = u3.userId AND u3.linkId = r.linkId
             WHERE m.logId > ?
             ORDER BY m.logId ASC
             LIMIT 100
