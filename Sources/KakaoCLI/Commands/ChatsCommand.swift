@@ -29,7 +29,7 @@ struct ChatsCommand: ParsableCommand {
         if json {
             let items = chats.map { chat -> [String: Any] in
                 var dict: [String: Any] = [
-                    "id": chat.id,
+                    "id": String(chat.id),
                     "type": chat.type.rawValue,
                     "display_name": chat.displayName,
                     "member_count": chat.memberCount,

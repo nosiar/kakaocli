@@ -32,9 +32,9 @@ struct SearchCommand: ParsableCommand {
         if json {
             let items = results.map { msg -> [String: Any] in
                 var dict: [String: Any] = [
-                    "id": msg.id,
-                    "chat_id": msg.chatId,
-                    "sender_id": msg.senderId,
+                    "id": String(msg.id),
+                    "chat_id": String(msg.chatId),
+                    "sender_id": String(msg.senderId),
                     "type": String(describing: msg.type),
                     "timestamp": ISO8601DateFormatter().string(from: msg.createdAt),
                     "is_from_me": msg.isFromMe,
