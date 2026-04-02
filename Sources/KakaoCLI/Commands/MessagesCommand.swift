@@ -17,6 +17,9 @@ struct MessagesCommand: ParsableCommand {
     @Option(name: .long, help: "Show messages since (e.g. 1h, 24h, 7d)")
     var since: String?
 
+    @Option(name: .long, help: "Only show messages after this log ID")
+    var afterId: Int64?
+
     @Option(name: .long, help: "Maximum number of messages")
     var limit: Int = 50
 
@@ -50,7 +53,7 @@ struct MessagesCommand: ParsableCommand {
         }
 
         let sinceDate = since.flatMap { parseDuration($0) }
-        let messages = try reader.messages(chatId: resolvedChatId, since: sinceDate, limit: limit)
+        let messages = try reader.messages(chatId: resolvedChatId, since: sinceDate, afterId: afterId, limit: limit)
 
         if json {
             let items = messages.map { msg -> [String: Any] in

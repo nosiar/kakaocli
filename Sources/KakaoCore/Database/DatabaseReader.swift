@@ -127,7 +127,7 @@ public final class DatabaseReader: @unchecked Sendable {
     }
 
     /// Get messages for a chat, optionally filtered by time.
-    public func messages(chatId: Int64? = nil, since: Date? = nil, limit: Int = 50) throws -> [Message] {
+    public func messages(chatId: Int64? = nil, since: Date? = nil, afterId: Int64? = nil, limit: Int = 50) throws -> [Message] {
         var conditions: [String] = []
         var bindings: [SQLValue] = []
 
@@ -139,6 +139,10 @@ public final class DatabaseReader: @unchecked Sendable {
             // KakaoTalk stores timestamps as seconds since epoch
             conditions.append("m.sentAt >= ?")
             bindings.append(.int64(Int64(since.timeIntervalSince1970)))
+        }
+        if let afterId {
+            conditions.append("m.logId > ?")
+            bindings.append(.int64(afterId))
         }
 
         let where_ = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
