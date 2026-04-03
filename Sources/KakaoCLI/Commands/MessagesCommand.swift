@@ -67,6 +67,7 @@ struct MessagesCommand: ParsableCommand {
                 ]
                 if let name = msg.senderName { dict["sender"] = name }
                 if let text = msg.text { dict["text"] = text }
+                if let attachment = msg.attachment { dict["attachment"] = attachment }
                 return dict
             }
             JSONOutput.printArray(items)

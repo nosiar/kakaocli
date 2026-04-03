@@ -7,6 +7,7 @@ public struct Message: Sendable {
     public let senderId: Int64
     public let senderName: String?
     public let text: String?
+    public let attachment: String?
     public let type: MessageType
     public let createdAt: Date
     public let isFromMe: Bool

@@ -150,7 +150,7 @@ public final class DatabaseReader: @unchecked Sendable {
         let sql = """
             SELECT m.logId, m.chatId, m.authorId,
                    COALESCE(u.displayName, u.friendNickName, u.nickName) as senderName,
-                   m.message, m.type, m.sentAt
+                   m.message, m.attachment, m.type, m.sentAt
             FROM NTChatMessage m
             LEFT JOIN NTChatRoom r ON m.chatId = r.chatId
             LEFT JOIN NTUser u ON m.authorId = u.userId AND u.linkId = r.linkId
@@ -168,8 +168,9 @@ public final class DatabaseReader: @unchecked Sendable {
                 senderId: row.int64(2),
                 senderName: row.string(3),
                 text: row.string(4),
-                type: Message.MessageType(rawValue: row.int(5)),
-                createdAt: row.kakaoDate(6),
+                attachment: row.string(5),
+                type: Message.MessageType(rawValue: row.int(6)),
+                createdAt: row.kakaoDate(7),
                 isFromMe: row.int64(2) == myUserId
             )
         }
@@ -180,7 +181,7 @@ public final class DatabaseReader: @unchecked Sendable {
         let sql = """
             SELECT m.logId, m.chatId, m.authorId,
                    COALESCE(u.displayName, u.friendNickName, u.nickName) as senderName,
-                   m.message, m.type, m.sentAt
+                   m.message, m.attachment, m.type, m.sentAt
             FROM NTChatMessage m
             LEFT JOIN NTChatRoom r ON m.chatId = r.chatId
             LEFT JOIN NTUser u ON m.authorId = u.userId AND u.linkId = r.linkId
@@ -196,8 +197,9 @@ public final class DatabaseReader: @unchecked Sendable {
                 senderId: row.int64(2),
                 senderName: row.string(3),
                 text: row.string(4),
-                type: Message.MessageType(rawValue: row.int(5)),
-                createdAt: row.kakaoDate(6),
+                attachment: row.string(5),
+                type: Message.MessageType(rawValue: row.int(6)),
+                createdAt: row.kakaoDate(7),
                 isFromMe: row.int64(2) == myUserId
             )
         }
