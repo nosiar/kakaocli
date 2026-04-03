@@ -152,7 +152,8 @@ public final class DatabaseReader: @unchecked Sendable {
                    COALESCE(u.displayName, u.friendNickName, u.nickName) as senderName,
                    m.message, m.type, m.sentAt
             FROM NTChatMessage m
-            LEFT JOIN NTUser u ON m.authorId = u.userId AND u.linkId = 0
+            LEFT JOIN NTChatRoom r ON m.chatId = r.chatId
+            LEFT JOIN NTUser u ON m.authorId = u.userId AND u.linkId = r.linkId
             \(where_)
             ORDER BY m.sentAt DESC
             LIMIT ?
@@ -181,7 +182,8 @@ public final class DatabaseReader: @unchecked Sendable {
                    COALESCE(u.displayName, u.friendNickName, u.nickName) as senderName,
                    m.message, m.type, m.sentAt
             FROM NTChatMessage m
-            LEFT JOIN NTUser u ON m.authorId = u.userId AND u.linkId = 0
+            LEFT JOIN NTChatRoom r ON m.chatId = r.chatId
+            LEFT JOIN NTUser u ON m.authorId = u.userId AND u.linkId = r.linkId
             WHERE m.message LIKE ?
             ORDER BY m.sentAt DESC
             LIMIT ?
